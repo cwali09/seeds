@@ -1,0 +1,53 @@
+graph TD
+    subgraph CLI["CLI Layer"]
+        INDEX["src/index.ts<br/>Entry point + command router"]
+        CMDS["src/commands/<br/>One file per command"]
+        OUTPUT["src/output.ts<br/>JSON + human output"]
+    end
+
+    subgraph Core["Core Layer"]
+        TYPES["src/types.ts<br/>Issue, Template, Config types"]
+        STORE["src/store.ts<br/>JSONL read/write/lock/atomic"]
+        ID["src/id.ts<br/>ID generation ({project}-{4hex})"]
+        CONFIG["src/config.ts<br/>YAML config load/save"]
+        YAML["src/yaml.ts<br/>Minimal YAML parser"]
+        MARKERS["src/markers.ts<br/>Marker-delimited sections"]
+    end
+
+    subgraph Storage["On-Disk Storage (.seeds/)"]
+        CFG_FILE["config.yaml"]
+        ISSUES["issues.jsonl"]
+        TEMPLATES["templates.jsonl"]
+        LOCK["*.lock (advisory)"]
+    end
+
+    subgraph Concurrency["Concurrency Model"]
+        ADV_LOCK["Advisory file lock<br/>O_CREAT | O_EXCL"]
+        ATOMIC["Atomic writes<br/>temp file + rename"]
+        DEDUP["Dedup on read<br/>last occurrence wins"]
+    end
+
+    INDEX --> CMDS
+    CMDS --> STORE
+    CMDS --> CONFIG
+    CMDS --> ID
+    CMDS --> OUTPUT
+    CMDS --> MARKERS
+    CONFIG --> YAML
+    STORE --> TYPES
+    STORE --> ADV_LOCK
+    STORE --> ATOMIC
+    STORE --> DEDUP
+    STORE --> ISSUES
+    STORE --> TEMPLATES
+    CONFIG --> CFG_FILE
+
+    classDef cli fill:#4a9eff,color:#fff
+    classDef core fill:#ff9f43,color:#fff
+    classDef storage fill:#2ed573,color:#fff
+    classDef conc fill:#a55eea,color:#fff
+
+    class INDEX,CMDS,OUTPUT cli
+    class TYPES,STORE,ID,CONFIG,YAML,MARKERS core
+    class CFG_FILE,ISSUES,TEMPLATES,LOCK storage
+    class ADV_LOCK,ATOMIC,DEDUP conc
